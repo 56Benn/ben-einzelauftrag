@@ -73,21 +73,7 @@ export function initializeStorage() {
 
   // Initialize class memberships
   if (!localStorage.getItem(STORAGE_KEYS.CLASS_MEMBERSHIPS)) {
-    const memberships: ClassMembership[] = [];
-    // Add default students to teacher's class (after users are initialized)
-    const allUsers = getUsers();
-    const teacher = allUsers.find(u => u.role === 'teacher');
-    const students = allUsers.filter(u => u.role === 'student');
-    if (teacher && students.length > 0) {
-      students.forEach(student => {
-        memberships.push({
-          studentId: student.id,
-          teacherId: teacher.id,
-          joinedAt: new Date().toISOString(),
-        });
-      });
-    }
-    localStorage.setItem(STORAGE_KEYS.CLASS_MEMBERSHIPS, JSON.stringify(memberships));
+    localStorage.setItem(STORAGE_KEYS.CLASS_MEMBERSHIPS, JSON.stringify([]));
   }
 
   // Initialize class requests
@@ -113,10 +99,10 @@ export function addSubject(subject: string) {
 export function cleanupSubjects() {
   const exams = getExams();
   if (exams.length === 0) {
-    // If no exams, clear all subjects except default ones
     localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify([]));
     return;
   }
+  
   const examSubjects = new Set(exams.map(e => e.subject));
   const subjects = getSubjects();
   const validSubjects = subjects.filter(s => examSubjects.has(s));
@@ -166,10 +152,10 @@ export function getExams(): Exam[] {
   const data = localStorage.getItem(STORAGE_KEYS.EXAMS);
   const exams = data ? JSON.parse(data) : [];
   
-  // Prüfe alle Prüfungen auf automatischen Abschluss und aktualisiere sie
+  // Auto-close exams after 5 days from exam date
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  let updated = false;
+  let hasUpdates = false;
   
   exams.forEach((exam: Exam) => {
     if (!exam.isClosed) {
@@ -179,15 +165,13 @@ export function getExams(): Exam[] {
       
       if (daysSinceExam >= 5) {
         exam.isClosed = true;
-        if (!exam.closedAt) {
-          exam.closedAt = new Date().toISOString();
-        }
-        updated = true;
+        exam.closedAt = exam.closedAt || new Date().toISOString();
+        hasUpdates = true;
       }
     }
   });
   
-  if (updated) {
+  if (hasUpdates) {
     localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(exams));
   }
   
@@ -203,12 +187,12 @@ export function saveExam(exam: Exam) {
   const exams = getExams();
   const index = exams.findIndex(e => e.id === exam.id);
   
-  // Wenn Prüfung manuell geschlossen wird, speichere den Zeitpunkt
+  // Set closedAt timestamp when manually closed
   if (exam.isClosed && !exam.closedAt) {
     exam.closedAt = new Date().toISOString();
   }
   
-  // Prüfe automatischen Abschluss (5 Tage nach Prüfungsdatum)
+  // Auto-close if 5 days have passed since exam date
   if (!exam.isClosed) {
     const examDate = new Date(exam.date);
     examDate.setHours(0, 0, 0, 0);
@@ -397,8 +381,9 @@ function initializeDefaultClassMemberships() {
       }
     }
   } catch (error) {
-    // Silently handle errors during initialization
-    console.warn('Error initializing default class memberships:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Error initializing default class memberships:', error);
+    }
   }
 }
 
@@ -413,5 +398,7 @@ try {
     }, 0);
   }
 } catch (error) {
-  console.error('Error initializing storage:', error);
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error initializing storage:', error);
+  }
 }
