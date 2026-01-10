@@ -222,9 +222,12 @@ export default function TeacherDashboard() {
         </div>
         <Button
           onClick={handleCreateExam}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+          className="text-white font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+          style={{ backgroundColor: '#3B82F6', borderColor: '#3B82F6' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3B82F6'; }}
         >
-          <Plus size={18} className="mr-2" />
+          <Plus size={18} className="mr-2" style={{ color: 'white' }} />
           hinzufügen
         </Button>
       </div>
@@ -238,7 +241,7 @@ export default function TeacherDashboard() {
             {/* Pending Exams */}
             <div className="space-y-4 mb-8">
               <div className="flex items-center gap-3">
-                <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                <div className="w-1 h-6 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
                 <h3 className="text-xl font-bold text-slate-900">Ausstehend:</h3>
                 <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">({pendingExams.length})</span>
               </div>
@@ -254,11 +257,11 @@ export default function TeacherDashboard() {
               ) : (
                 pendingExams.map((exam) => (
                   <Card key={exam.id} className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="bg-blue-600 text-white pb-3">
+                    <CardHeader className="text-white pb-3" style={{ backgroundColor: '#3B82F6' }}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <CardTitle className="text-white text-lg font-semibold mb-1">{exam.title}</CardTitle>
-                          <div className="flex items-center gap-3 text-xs text-white/90">
+                          <div className="flex items-center gap-3 text-xs" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
                             <span>{exam.subject}</span>
                             <span>•</span>
                             <span>{new Date(exam.date).toLocaleDateString('de-CH')}</span>
@@ -269,33 +272,42 @@ export default function TeacherDashboard() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEditExam(exam)}
-                            className="text-white hover:bg-blue-700 h-8 w-8"
+                            className="h-8 w-8"
+                            style={{ color: 'white' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                             title="Bearbeiten"
                           >
-                            <Edit size={16} />
+                            <Edit size={16} style={{ color: 'white' }} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleCloseExam(exam.id)}
-                            className="text-white hover:bg-blue-700 h-8 w-8"
+                            className="h-8 w-8"
+                            style={{ color: 'white' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                             title="Abschließen"
                           >
-                            <Lock size={16} />
+                            <Lock size={16} style={{ color: 'white' }} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteExam(exam.id)}
-                            className="text-white hover:bg-red-500 h-8 w-8"
+                            className="h-8 w-8"
+                            style={{ color: 'white' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.8)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                             title="Löschen"
                           >
-                            <X size={16} />
+                            <X size={16} style={{ color: 'white' }} />
                           </Button>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-4 bg-blue-50 border-b border-blue-100">
+                    <CardContent className="p-4 border-b" style={{ backgroundColor: '#EFF6FF', borderColor: '#DBEAFE' }}>
                       <p className="text-sm text-slate-700">{exam.description || 'Keine Beschreibung vorhanden'}</p>
                     </CardContent>
                   </Card>
@@ -324,14 +336,14 @@ export default function TeacherDashboard() {
                   const predictions = getPredictions().filter((p) => p.examId === exam.id);
                   return (
                     <Card key={exam.id} className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                      <CardHeader className="bg-slate-700 text-white pb-3">
+                      <CardHeader className="text-white pb-3" style={{ backgroundColor: '#1F2937' }}>
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <CardTitle className="text-white text-lg font-semibold flex items-center gap-2 mb-1">
                               {exam.title}
-                              <Info size={14} className="text-white/80" />
+                              <Info size={14} style={{ color: 'white' }} />
                             </CardTitle>
-                            <div className="flex items-center gap-3 text-xs text-white/90">
+                            <div className="flex items-center gap-3 text-xs" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
                               <span>{exam.subject}</span>
                               <span>•</span>
                               <span>{new Date(exam.date).toLocaleDateString('de-CH')}</span>
@@ -341,10 +353,13 @@ export default function TeacherDashboard() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEditExam(exam)}
-                            className="text-white hover:bg-slate-600 h-8 w-8"
+                            className="h-8 w-8"
+                            style={{ color: 'white' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                             title="Bearbeiten"
                           >
-                            <Edit size={16} />
+                            <Edit size={16} style={{ color: 'white' }} />
                           </Button>
                         </div>
                       </CardHeader>
@@ -425,7 +440,7 @@ export default function TeacherDashboard() {
         {/* Form Sidebar */}
         {showForm && (
           <div className="lg:col-span-1">
-            <Card className="bg-white border border-slate-200 shadow-lg sticky top-20">
+            <Card className="bg-white border border-slate-200 shadow-lg" style={{ position: 'sticky', top: '88px', zIndex: 100 }}>
               <CardHeader className="pb-3 border-b border-slate-200 bg-slate-50 rounded-t-lg">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-semibold text-slate-900">
@@ -444,12 +459,21 @@ export default function TeacherDashboard() {
               <CardContent className="p-5 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title" className="font-medium text-slate-800 text-sm">Titel:</Label>
-                  <Input
+                      <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="z.B. Proportionalität"
-                    className="border-slate-300 rounded-lg h-10 text-sm focus:ring-2 focus:ring-blue-500"
+                    className="border-slate-300 rounded-lg h-10 text-sm"
+                    style={{ '--bs-focus-ring-color': 'rgba(59, 130, 246, 0.25)' } as React.CSSProperties}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3B82F6';
+                      e.currentTarget.style.boxShadow = '0 0 0 0.2rem rgba(59, 130, 246, 0.25)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#CBD5E1';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   />
                 </div>
 
@@ -457,11 +481,22 @@ export default function TeacherDashboard() {
                   <Label htmlFor="subject" className="font-medium text-slate-800 text-sm">Fach:</Label>
                   <div className="space-y-2">
                     <div className="flex gap-2">
-                      <Button
+                        <Button
                         type="button"
                         variant={subjectInputMode === 'select' ? 'default' : 'outline'}
                         onClick={() => setSubjectInputMode('select')}
-                        className={`flex-1 text-sm h-9 ${subjectInputMode === 'select' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border-slate-300'}`}
+                        className={`flex-1 text-sm h-9 text-white ${subjectInputMode === 'select' ? '' : 'border-slate-300'}`}
+                        style={subjectInputMode === 'select' ? { backgroundColor: '#3B82F6', borderColor: '#3B82F6' } : {}}
+                        onMouseEnter={(e) => {
+                          if (subjectInputMode === 'select') {
+                            e.currentTarget.style.backgroundColor = '#2563EB';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (subjectInputMode === 'select') {
+                            e.currentTarget.style.backgroundColor = '#3B82F6';
+                          }
+                        }}
                       >
                         Auswählen
                       </Button>
@@ -469,7 +504,18 @@ export default function TeacherDashboard() {
                         type="button"
                         variant={subjectInputMode === 'input' ? 'default' : 'outline'}
                         onClick={() => setSubjectInputMode('input')}
-                        className={`flex-1 text-sm h-9 ${subjectInputMode === 'input' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border-slate-300'}`}
+                        className={`flex-1 text-sm h-9 text-white ${subjectInputMode === 'input' ? '' : 'border-slate-300'}`}
+                        style={subjectInputMode === 'input' ? { backgroundColor: '#3B82F6', borderColor: '#3B82F6' } : {}}
+                        onMouseEnter={(e) => {
+                          if (subjectInputMode === 'input') {
+                            e.currentTarget.style.backgroundColor = '#2563EB';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (subjectInputMode === 'input') {
+                            e.currentTarget.style.backgroundColor = '#3B82F6';
+                          }
+                        }}
                       >
                         Neu hinzufügen
                       </Button>
@@ -478,7 +524,15 @@ export default function TeacherDashboard() {
                       <Select
                         value={formData.subject}
                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        className="w-full border-slate-300 rounded-lg h-10 text-sm focus:ring-2 focus:ring-blue-500"
+                        className="w-full border-slate-300 rounded-lg h-10 text-sm"
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = '#3B82F6';
+                          e.currentTarget.style.boxShadow = '0 0 0 0.2rem rgba(59, 130, 246, 0.25)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = '#CBD5E1';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       >
                         <option value="">Fach auswählen</option>
                         {subjects.map((subject) => (
@@ -493,7 +547,15 @@ export default function TeacherDashboard() {
                           value={newSubject}
                           onChange={(e) => setNewSubject(e.target.value)}
                           placeholder="Neues Fach eingeben"
-                          className="border-slate-300 rounded-lg h-10 text-sm focus:ring-2 focus:ring-blue-500"
+                          className="border-slate-300 rounded-lg h-10 text-sm"
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = '#3B82F6';
+                            e.currentTarget.style.boxShadow = '0 0 0 0.2rem rgba(59, 130, 246, 0.25)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = '#CBD5E1';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -504,10 +566,13 @@ export default function TeacherDashboard() {
                         <Button
                           type="button"
                           onClick={handleAddNewSubject}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm h-9"
+                          className="w-full text-white text-sm h-9"
+                          style={{ backgroundColor: '#3B82F6', borderColor: '#3B82F6' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3B82F6'; }}
                           disabled={!newSubject.trim()}
                         >
-                          <Plus size={14} className="mr-2" />
+                          <Plus size={14} className="mr-2" style={{ color: 'white' }} />
                           Fach hinzufügen
                         </Button>
                       </div>
@@ -522,7 +587,15 @@ export default function TeacherDashboard() {
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="border-slate-300 rounded-lg h-10 text-sm focus:ring-2 focus:ring-blue-500"
+                    className="border-slate-300 rounded-lg h-10 text-sm"
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3B82F6';
+                      e.currentTarget.style.boxShadow = '0 0 0 0.2rem rgba(59, 130, 246, 0.25)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#CBD5E1';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   />
                 </div>
 
@@ -533,24 +606,48 @@ export default function TeacherDashboard() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Beschreibung der Prüfung"
-                    className="border-slate-300 rounded-lg h-10 text-sm focus:ring-2 focus:ring-blue-500"
+                    className="border-slate-300 rounded-lg h-10 text-sm"
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3B82F6';
+                      e.currentTarget.style.boxShadow = '0 0 0 0.2rem rgba(59, 130, 246, 0.25)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#CBD5E1';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   />
                 </div>
 
                 {editingExam && (
                   <div className="space-y-3 pt-4 border-t border-slate-200">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                      <div className="w-1 h-4 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
                       <Label className="font-semibold text-slate-900 text-sm">Noten eintragen:</Label>
                     </div>
                     <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
                       {students.map((student) => (
-                        <div key={student.id} className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all">
+                        <div key={student.id} className="flex items-center gap-2 p-2 rounded-lg border border-slate-200 transition-all" style={{ transition: 'all 0.2s' }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = '#93C5FD';
+                            e.currentTarget.style.backgroundColor = 'rgba(239, 246, 255, 0.5)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = '#E2E8F0';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}>
                           <Label className="w-24 text-xs font-medium text-slate-800">{student.username}:</Label>
                           <Select
                             value={grades[student.id] !== undefined ? grades[student.id].toString() : ''}
                             onChange={(e) => handleGradeChange(student.id, e.target.value)}
-                            className="flex-1 border-slate-300 rounded-lg h-9 text-sm focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 border-slate-300 rounded-lg h-9 text-sm"
+                            onFocus={(e) => {
+                              e.currentTarget.style.borderColor = '#3B82F6';
+                              e.currentTarget.style.boxShadow = '0 0 0 0.2rem rgba(59, 130, 246, 0.25)';
+                            }}
+                            onBlur={(e) => {
+                              e.currentTarget.style.borderColor = '#CBD5E1';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
                           >
                             <option value="">-</option>
                             {gradeOptions.map((grade) => (
@@ -567,9 +664,12 @@ export default function TeacherDashboard() {
 
                 <Button
                   onClick={handleSaveExam}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm hover:shadow-md transition-all"
+                  className="w-full text-white font-semibold shadow-sm hover:shadow-md transition-all"
+                  style={{ backgroundColor: '#3B82F6', borderColor: '#3B82F6' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#2563EB'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#3B82F6'; }}
                 >
-                  <Check size={16} className="mr-2" />
+                  <Check size={16} className="mr-2" style={{ color: 'white' }} />
                   senden
                 </Button>
               </CardContent>

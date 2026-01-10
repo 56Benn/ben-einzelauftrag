@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Form } from 'react-bootstrap'
 import { cn } from "@/lib/utils"
 
 export interface LabelProps
@@ -6,7 +7,7 @@ export interface LabelProps
 
 const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
   ({ className, ...props }, ref) => (
-    <label
+    <Form.Label
       ref={ref}
       className={cn(
         "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
@@ -19,5 +20,3 @@ const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
 Label.displayName = "Label"
 
 export { Label }
-
-

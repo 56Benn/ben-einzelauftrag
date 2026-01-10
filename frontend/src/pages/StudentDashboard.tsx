@@ -548,7 +548,7 @@ export default function StudentDashboard() {
 
             {/* Leaderboard */}
             {currentExam && examLeaderboard.length > 0 && (
-              <Card className="bg-white border border-slate-200 shadow-sm sticky top-20">
+              <Card className="bg-white border border-slate-200 shadow-sm" style={{ position: 'sticky', top: '88px', zIndex: 100 }}>
                 <CardHeader className="pb-3 border-b border-slate-200 bg-slate-50 rounded-t-lg">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-900">
                     <div className="w-6 h-6 rounded-lg bg-slate-200 flex items-center justify-center">
