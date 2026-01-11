@@ -10,6 +10,20 @@ export interface ApiError {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    // For 401 (Unauthorized), return empty response to allow custom handling
+    if (response.status === 401) {
+      const errorText = await response.text();
+      if (errorText) {
+        try {
+          const error: ApiError = JSON.parse(errorText);
+          throw new Error(error.message || 'Ungültige E-Mail oder Passwort');
+        } catch {
+          throw new Error('Ungültige E-Mail oder Passwort');
+        }
+      }
+      throw new Error('Ungültige E-Mail oder Passwort');
+    }
+    
     const error: ApiError = await response.json().catch(() => ({
       timestamp: new Date().toISOString(),
       status: response.status,
@@ -24,12 +38,28 @@ async function handleResponse<T>(response: Response): Promise<T> {
 // User API
 export const userApi = {
   async login(email: string, password: string) {
-    const response = await fetch(`${API_BASE_URL}/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    return handleResponse(response);
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (response.status === 401) {
+        throw new Error('Ungültige E-Mail oder Passwort');
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Login fehlgeschlagen: ${response.status} ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Backend nicht erreichbar. Stellen Sie sicher, dass das Backend auf http://localhost:8080 läuft.');
+      }
+      throw error;
+    }
   },
 
   async getAllUsers() {
@@ -153,4 +183,5 @@ export const predictionApi = {
     }
   },
 };
+
 

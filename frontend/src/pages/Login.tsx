@@ -22,11 +22,17 @@ export default function Login() {
     e.preventDefault();
     setError('');
 
-    const success = await login(email, password);
-    if (success) {
-      navigate('/');
-    } else {
-      setError('Ungültige E-Mail oder Passwort');
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate('/');
+      } else {
+        setError('Ungültige E-Mail oder Passwort');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten';
+      setError(errorMessage);
+      console.error('Login error:', error);
     }
   };
 

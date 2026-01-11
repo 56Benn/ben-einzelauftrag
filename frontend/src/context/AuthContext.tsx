@@ -48,11 +48,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const loggedInUser = await api.login(email, password);
-      setUser(loggedInUser);
-      setStoredUser(loggedInUser);
-      return true;
+      if (loggedInUser && loggedInUser.id) {
+        setUser(loggedInUser);
+        setStoredUser(loggedInUser);
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error('Login failed:', error);
+      // Check if it's a network error (backend not running)
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('Backend nicht erreichbar. Stellen Sie sicher, dass das Backend auf http://localhost:8080 läuft.');
+      }
       return false;
     }
   };

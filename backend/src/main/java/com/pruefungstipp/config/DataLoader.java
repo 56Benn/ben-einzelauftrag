@@ -19,7 +19,7 @@ public class DataLoader implements CommandLineRunner {
     
     @Override
     public void run(String... args) {
-        // Create default users
+        // Create default users only if database is empty (first start)
         if (userRepository.count() == 0) {
             User student1 = new User();
             student1.setUsername("Schüler1");
@@ -43,7 +43,7 @@ public class DataLoader implements CommandLineRunner {
             userRepository.save(teacher);
         }
         
-        // Create default exam
+        // Create default exam only if no exams exist (first start)
         if (examRepository.count() == 0) {
             Exam exam = new Exam();
             exam.setTitle("Proportionalität");

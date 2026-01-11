@@ -20,13 +20,25 @@ public class UserController {
     
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody LoginRequest request) {
-        User user = userService.getUserByEmail(request.getEmail());
-        if (user != null && user.getPassword().equals(request.getPassword())) {
-            // Passwort nicht zurückgeben
-            user.setPassword("");
-            return ResponseEntity.ok(user);
+        try {
+            if (request.getEmail() == null || request.getPassword() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+            
+            User user = userService.getUserByEmail(request.getEmail());
+            if (user != null && user.getPassword() != null && user.getPassword().equals(request.getPassword())) {
+                // Passwort nicht zurückgeben
+                user.setPassword("");
+                return ResponseEntity.ok(user);
+            }
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (com.pruefungstipp.exception.ResourceNotFoundException e) {
+            // User nicht gefunden
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (Exception e) {
+            // Anderer Fehler
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     
     @GetMapping
