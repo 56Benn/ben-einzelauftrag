@@ -4,16 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { api } from '@/lib/apiAdapter';
 import { 
   getClassMembershipsByTeacher, 
-  getUsers, 
   addStudentToClass, 
   removeStudentFromClass,
   getClassRequestsByTeacher,
-  updateClassRequest,
-  getUserByEmail,
-  getExams,
-  getPredictions
+  updateClassRequest
 } from '@/lib/storage';
 import { User } from '@/types';
 import { Users, Plus, Search, X, Check, XCircle, Mail, UserPlus, FileText } from 'lucide-react';
@@ -37,23 +34,35 @@ export default function ClassManagement() {
     }
   }, [user]);
 
-  const loadData = () => {
+  const loadData = async () => {
     if (!user) return;
     
-    // Load class members
-    const memberships = getClassMembershipsByTeacher(user.id);
-    const allUsers = getUsers();
-    const studentIds = memberships.map(m => m.studentId);
-    const members = allUsers.filter(u => studentIds.includes(u.id));
-    setClassMembers(members);
+    try {
+      // Load class members
+      const memberships = getClassMembershipsByTeacher(user.id);
+      const allUsers = await api.getAllUsers();
+      const studentIds = memberships.map(m => m.studentId);
+      const members = allUsers.filter(u => studentIds.includes(u.id));
+      setClassMembers(members);
 
-    // Load all students
-    const students = allUsers.filter(u => u.role === 'student');
-    setAllStudents(students);
+      // Load all students
+      const students = allUsers.filter(u => u.role === 'student');
+      setAllStudents(students);
 
-    // Load requests
-    const teacherRequests = getClassRequestsByTeacher(user.email || '');
-    setRequests(teacherRequests);
+      // Load requests
+      const teacherRequests = getClassRequestsByTeacher(user.email || '');
+      setRequests(teacherRequests);
+      
+      // Load points for all class members
+      const pointsMap: Record<string, number> = {};
+      for (const member of members) {
+        const total = await calculateTotalPoints(member.id);
+        pointsMap[member.id] = total;
+      }
+      setStudentPoints(pointsMap);
+    } catch (error) {
+      console.error('Error loading class data:', error);
+    }
   };
 
   const handleAddStudent = (studentId: string) => {
@@ -82,37 +91,46 @@ export default function ClassManagement() {
     loadData();
   };
 
-  const handleSearchStudent = () => {
+  const handleSearchStudent = async () => {
     if (!searchQuery.trim()) return;
-    const student = getUserByEmail(searchQuery.trim());
-    if (student && student.role === 'student') {
-      if (!user) return;
-      if (!classMembers.some(m => m.id === student.id)) {
-        handleAddStudent(student.id);
+    try {
+      const student = await api.getUserByEmail(searchQuery.trim());
+      if (student && student.role === 'student') {
+        if (!user) return;
+        if (!classMembers.some(m => m.id === student.id)) {
+          handleAddStudent(student.id);
+        } else {
+          alert('Dieser Schüler ist bereits in der Klasse');
+        }
       } else {
-        alert('Dieser Schüler ist bereits in der Klasse');
+        alert('Kein Schüler mit dieser E-Mail gefunden');
       }
-    } else {
+    } catch (error) {
       alert('Kein Schüler mit dieser E-Mail gefunden');
     }
     setSearchQuery('');
   };
 
-  const calculateTotalPoints = (studentId: string): number => {
-    const exams = getExams();
-    const predictions = getPredictions();
-    let total = 0;
+  const calculateTotalPoints = async (studentId: string): Promise<number> => {
+    try {
+      const exams = await api.getAllExams();
+      const predictions = await api.getPredictionsByStudent(studentId);
+      let total = 0;
 
-    exams.forEach(exam => {
-      if (exam.isClosed && exam.grades) {
-        const prediction = predictions.find(p => p.examId === exam.id && p.studentId === studentId);
-        if (prediction) {
-          total += (prediction.points1 || 0) + (prediction.points2 || 0);
+      exams.forEach(exam => {
+        if (exam.isClosed && exam.grades) {
+          const prediction = predictions.find(p => p.examId === exam.id && p.studentId === studentId);
+          if (prediction) {
+            total += (prediction.points1 || 0) + (prediction.points2 || 0);
+          }
         }
-      }
-    });
+      });
 
-    return total;
+      return total;
+    } catch (error) {
+      console.error('Error calculating total points:', error);
+      return 0;
+    }
   };
 
   const filteredStudents = allStudents.filter(s => {
@@ -276,7 +294,7 @@ export default function ClassManagement() {
                     {classMembers
                       .map(student => ({
                         ...student,
-                        totalPoints: calculateTotalPoints(student.id)
+                        totalPoints: studentPoints[student.id] || 0
                       }))
                       .sort((a, b) => b.totalPoints - a.totalPoints)
                       .map((student) => (

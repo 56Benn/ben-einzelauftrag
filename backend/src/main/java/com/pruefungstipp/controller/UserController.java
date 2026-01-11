@@ -2,6 +2,7 @@ package com.pruefungstipp.controller;
 
 import com.pruefungstipp.model.User;
 import com.pruefungstipp.service.UserService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,17 @@ public class UserController {
     
     private final UserService userService;
     
+    @PostMapping("/login")
+    public ResponseEntity<User> login(@RequestBody LoginRequest request) {
+        User user = userService.getUserByEmail(request.getEmail());
+        if (user != null && user.getPassword().equals(request.getPassword())) {
+            // Passwort nicht zurückgeben
+            user.setPassword("");
+            return ResponseEntity.ok(user);
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+    
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
@@ -29,23 +41,37 @@ public class UserController {
     
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
-        return ResponseEntity.ok(userService.getUserByEmail(email));
+        User user = userService.getUserByEmail(email);
+        if (user != null) {
+            user.setPassword(""); // Passwort nicht zurückgeben
+        }
+        return ResponseEntity.ok(user);
     }
     
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
-        return new ResponseEntity<>(userService.createUser(user), HttpStatus.CREATED);
+        User created = userService.createUser(user);
+        created.setPassword(""); // Passwort nicht zurückgeben
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
     
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateUser(id, user));
+        User updated = userService.updateUser(id, user);
+        updated.setPassword(""); // Passwort nicht zurückgeben
+        return ResponseEntity.ok(updated);
     }
     
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @Data
+    static class LoginRequest {
+        private String email;
+        private String password;
     }
 }
 

@@ -19,8 +19,33 @@ public class GlobalExceptionHandler {
         error.put("status", HttpStatus.NOT_FOUND.value());
         error.put("error", "Not Found");
         error.put("message", ex.getMessage());
+        error.put("type", "RESOURCE_NOT_FOUND");
         
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+    
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(ValidationException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.BAD_REQUEST.value());
+        error.put("error", "Validation Error");
+        error.put("message", ex.getMessage());
+        error.put("type", "VALIDATION_ERROR");
+        
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+    
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateResourceException(DuplicateResourceException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", LocalDateTime.now());
+        error.put("status", HttpStatus.CONFLICT.value());
+        error.put("error", "Duplicate Resource");
+        error.put("message", ex.getMessage());
+        error.put("type", "DUPLICATE_RESOURCE");
+        
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
     
     @ExceptionHandler(IllegalArgumentException.class)
@@ -30,6 +55,7 @@ public class GlobalExceptionHandler {
         error.put("status", HttpStatus.BAD_REQUEST.value());
         error.put("error", "Bad Request");
         error.put("message", ex.getMessage());
+        error.put("type", "ILLEGAL_ARGUMENT");
         
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
@@ -41,6 +67,7 @@ public class GlobalExceptionHandler {
         error.put("status", HttpStatus.CONFLICT.value());
         error.put("error", "Conflict");
         error.put("message", ex.getMessage());
+        error.put("type", "ILLEGAL_STATE");
         
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
@@ -52,6 +79,7 @@ public class GlobalExceptionHandler {
         error.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         error.put("error", "Internal Server Error");
         error.put("message", "Ein unerwarteter Fehler ist aufgetreten");
+        error.put("type", "GENERIC_ERROR");
         
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }

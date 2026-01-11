@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select } from '@/components/ui/select';
-import { getExams, saveExam, deleteExam, getUsers, getPredictions, savePrediction, getSubjects, addSubject, cleanupSubjects } from '@/lib/storage';
+import { api } from '@/lib/apiAdapter';
+import { getUsers, getPredictions, getSubjects, addSubject, cleanupSubjects } from '@/lib/storage';
 import { calculatePoints, formatGrade, getGradeOptions } from '@/lib/points';
 import { getExamStatus } from '@/lib/examUtils';
 import { Exam, Prediction } from '@/types';
@@ -27,6 +28,7 @@ export default function TeacherDashboard() {
     date: '',
   });
   const [grades, setGrades] = useState<Record<string, number>>({});
+  const [examPredictionsMap, setExamPredictionsMap] = useState<Record<string, Prediction[]>>({});
 
   useEffect(() => {
     loadExams();
@@ -59,17 +61,36 @@ export default function TeacherDashboard() {
     }
   }, [editingExam]);
 
-  const loadExams = () => {
-    // getExams() prüft automatisch auf Abschluss und aktualisiert die Prüfungen
-    const allExams = getExams();
-    setExams(allExams);
-    // Separate by status instead of isClosed flag
-    setPendingExams(allExams.filter((e) => {
-      const status = getExamStatus(e);
-      return status === 'open' || status === 'evaluation';
-    }));
-    setGradedExams(allExams.filter((e) => getExamStatus(e) === 'closed'));
-    cleanupSubjects();
+  const loadExams = async () => {
+    try {
+      const allExams = await api.getAllExams();
+      setExams(allExams);
+      // Separate by status instead of isClosed flag
+      const pending = allExams.filter((e) => {
+        const status = getExamStatus(e);
+        return status === 'open' || status === 'evaluation';
+      });
+      const graded = allExams.filter((e) => getExamStatus(e) === 'closed');
+      setPendingExams(pending);
+      setGradedExams(graded);
+      
+      // Load predictions for all graded exams
+      const predictionsMap: Record<string, Prediction[]> = {};
+      for (const exam of graded) {
+        try {
+          const preds = await api.getPredictionsByExam(exam.id);
+          predictionsMap[exam.id] = preds;
+        } catch (error) {
+          console.error(`Error loading predictions for exam ${exam.id}:`, error);
+          predictionsMap[exam.id] = [];
+        }
+      }
+      setExamPredictionsMap(predictionsMap);
+      
+      cleanupSubjects();
+    } catch (error) {
+      console.error('Error loading exams:', error);
+    }
   };
 
   const loadSubjects = () => {
@@ -101,7 +122,7 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleSaveExam = () => {
+  const handleSaveExam = async () => {
     const finalSubject = subjectInputMode === 'input' && newSubject.trim() 
       ? newSubject.trim() 
       : formData.subject;
@@ -117,58 +138,48 @@ export default function TeacherDashboard() {
       loadSubjects();
     }
 
-    const exam: Exam = editingExam
-      ? { ...editingExam, ...formData, subject: finalSubject, grades: { ...grades } }
-      : {
-          id: Date.now().toString(),
-          title: formData.title,
-          subject: finalSubject,
-          description: formData.description,
-          date: formData.date,
-          isClosed: false,
-          grades: {},
-        };
-
-    // If grades are entered, calculate points for predictions
-    if (Object.keys(grades).length > 0) {
-      const predictions = getPredictions();
-      const examPredictions = predictions.filter((p) => p.examId === exam.id);
-
-      examPredictions.forEach((pred) => {
-        const studentGrade = grades[pred.studentId];
-        if (studentGrade !== undefined) {
-          if (pred.prediction1 !== undefined) {
-            pred.points1 = calculatePoints(pred.prediction1, studentGrade);
-          }
-          if (pred.prediction2 !== undefined) {
-            pred.points2 = calculatePoints(pred.prediction2, studentGrade);
-          }
-          savePrediction(pred);
-        }
-      });
-
-      // Also update predictions for students who don't have predictions yet but have grades
-      Object.keys(grades).forEach((studentId) => {
-        const existingPred = examPredictions.find((p) => p.studentId === studentId);
-        if (!existingPred) {
-          const newPred: Prediction = {
-            examId: exam.id,
-            studentId: studentId,
+    try {
+      const exam: Exam = editingExam
+        ? { ...editingExam, ...formData, subject: finalSubject, grades: { ...grades } }
+        : {
+            id: '',
+            title: formData.title,
+            subject: finalSubject,
+            description: formData.description,
+            date: formData.date,
+            isClosed: false,
+            grades: {},
           };
-          savePrediction(newPred);
-        }
-      });
-    }
 
-    saveExam(exam);
-    loadExams();
-    setShowForm(false);
-    setEditingExam(null);
-    setFormData({ title: '', subject: '', description: '', date: '' });
-    setGrades({});
-    setSubjectInputMode('select');
-    setNewSubject('');
-    cleanupSubjects();
+      // Convert grades to backend format (Long keys)
+      const backendGrades: Record<string, number> = {};
+      Object.keys(grades).forEach((key) => {
+        backendGrades[key] = grades[key];
+      });
+      exam.grades = backendGrades;
+
+      let savedExam: Exam;
+      if (editingExam) {
+        savedExam = await api.updateExam(exam.id, exam);
+      } else {
+        savedExam = await api.createExam(exam);
+      }
+
+      // If grades are entered, the backend will automatically calculate points
+      // No need to manually update predictions here
+
+      await loadExams();
+      setShowForm(false);
+      setEditingExam(null);
+      setFormData({ title: '', subject: '', description: '', date: '' });
+      setGrades({});
+      setSubjectInputMode('select');
+      setNewSubject('');
+      cleanupSubjects();
+    } catch (error) {
+      console.error('Error saving exam:', error);
+      alert('Fehler beim Speichern der Prüfung: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
+    }
   };
 
   const handleCloseForm = () => {
@@ -181,21 +192,26 @@ export default function TeacherDashboard() {
     cleanupSubjects();
   };
 
-  const handleCloseExam = (examId: string) => {
-    const exam = exams.find((e) => e.id === examId);
-    if (exam) {
-      exam.isClosed = true;
-      exam.closedAt = new Date().toISOString();
-      saveExam(exam);
-      loadExams();
+  const handleCloseExam = async (examId: string) => {
+    try {
+      await api.closeExam(examId);
+      await loadExams();
+    } catch (error) {
+      console.error('Error closing exam:', error);
+      alert('Fehler beim Abschließen der Prüfung: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
     }
   };
 
-  const handleDeleteExam = (examId: string) => {
+  const handleDeleteExam = async (examId: string) => {
     if (confirm('Möchten Sie diese Prüfung wirklich löschen?')) {
-      deleteExam(examId);
-      loadExams();
-      cleanupSubjects();
+      try {
+        await api.deleteExam(examId);
+        await loadExams();
+        cleanupSubjects();
+      } catch (error) {
+        console.error('Error deleting exam:', error);
+        alert('Fehler beim Löschen der Prüfung: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
+      }
     }
   };
 
@@ -333,7 +349,7 @@ export default function TeacherDashboard() {
                 </Card>
               ) : (
                 gradedExams.map((exam) => {
-                  const predictions = getPredictions().filter((p) => p.examId === exam.id);
+                  const predictions = examPredictionsMap[exam.id] || [];
                   return (
                     <Card key={exam.id} className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                       <CardHeader className="text-white pb-3" style={{ backgroundColor: '#1F2937' }}>

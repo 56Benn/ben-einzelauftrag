@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { getExams, getPredictions, getUsers } from '@/lib/storage';
+import { api } from '@/lib/apiAdapter';
 import { formatGrade } from '@/lib/points';
 import { Target, Calendar } from 'lucide-react';
 
@@ -15,12 +15,14 @@ export default function Profile() {
     }
   }, [user]);
 
-  const loadExamResults = () => {
+  const loadExamResults = async () => {
     if (!user) return;
 
-    const exams = getExams();
-    const predictions = getPredictions();
-    const students = getUsers().filter((u) => u.role === 'student');
+    try {
+      const exams = await api.getAllExams();
+      const predictions = await api.getPredictionsByStudent(user.id);
+      const allUsers = await api.getAllUsers();
+      const students = allUsers.filter((u) => u.role === 'student');
 
     const results = exams
       .filter((exam) => exam.isClosed && exam.grades && exam.grades[user.id])
@@ -58,7 +60,10 @@ export default function Profile() {
       })
       .sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
 
-    setExamResults(results);
+      setExamResults(results);
+    } catch (error) {
+      console.error('Error loading exam results:', error);
+    }
   };
 
   if (!user) return null;

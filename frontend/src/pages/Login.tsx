@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Eye, EyeOff, User } from 'lucide-react';
-import { getRecentUsers } from '@/lib/storage';
+// Quick login removed - using backend API
 import { User as UserType } from '@/types';
 import { Container, Form, Alert, InputGroup } from 'react-bootstrap';
 
@@ -15,34 +15,31 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [recentUsers, setRecentUsers] = useState<UserType[]>([]);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setRecentUsers(getRecentUsers());
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (login(email, password)) {
+    const success = await login(email, password);
+    if (success) {
       navigate('/');
     } else {
       setError('Ungültige E-Mail oder Passwort');
     }
   };
 
-  const handleQuickLogin = (user: UserType) => {
+  const handleQuickLogin = async (user: UserType) => {
     setEmail(user.email);
     setPassword(user.password);
     setError('');
-    setTimeout(() => {
-      if (login(user.email, user.password)) {
-        navigate('/');
-      }
-    }, 100);
+    const success = await login(user.email, user.password);
+    if (success) {
+      navigate('/');
+    } else {
+      setError('Ungültige E-Mail oder Passwort');
+    }
   };
 
   return (
@@ -129,30 +126,6 @@ export default function Login() {
                 </Button>
               </Form>
 
-              {/* Quick Login */}
-              {recentUsers.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <p className="text-sm text-gray-600 mb-4 font-semibold">Schnell-Anmeldung:</p>
-                  <div className="space-y-2.5">
-                    {recentUsers.map((user) => (
-                      <button
-                        key={user.id}
-                        type="button"
-                        onClick={() => handleQuickLogin(user)}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-left transition-all duration-200 group"
-                      >
-                        <div className="w-9 h-9 rounded-full bg-gray-200 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
-                          <User size={16} className="text-gray-600 group-hover:text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm text-gray-900">{user.username}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 

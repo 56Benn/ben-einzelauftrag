@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getUsers, getExams, getPredictions } from '@/lib/storage';
+import { api } from '@/lib/apiAdapter';
 import { formatGrade } from '@/lib/points';
 import { User } from '@/types';
 import { ArrowLeft, Calendar, BookOpen, Target } from 'lucide-react';
@@ -20,20 +20,20 @@ export default function StudentDetail() {
     }
   }, [studentId]);
 
-  const loadStudentData = () => {
+  const loadStudentData = async () => {
     if (!studentId) return;
 
-    const allUsers = getUsers();
-    const foundStudent = allUsers.find(u => u.id === studentId);
-    if (!foundStudent) {
-      navigate('/class');
-      return;
-    }
-    setStudent(foundStudent);
+    try {
+      const allUsers = await api.getAllUsers();
+      const foundStudent = allUsers.find(u => u.id === studentId);
+      if (!foundStudent) {
+        navigate('/class');
+        return;
+      }
+      setStudent(foundStudent);
 
-    const exams = getExams();
-    const predictions = getPredictions();
-    const allPredictions = predictions.filter(p => p.studentId === studentId);
+      const exams = await api.getAllExams();
+      const allPredictions = await api.getPredictionsByStudent(studentId);
 
     let total = 0;
     const results = exams
@@ -60,8 +60,11 @@ export default function StudentDetail() {
       })
       .sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
 
-    setExamResults(results);
-    setTotalPoints(total);
+      setExamResults(results);
+      setTotalPoints(total);
+    } catch (error) {
+      console.error('Error loading student data:', error);
+    }
   };
 
   if (!student) {

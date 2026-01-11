@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getExams, getPredictions, getUsers } from '@/lib/storage';
+import { api } from '@/lib/apiAdapter';
 import { Users, Trophy } from 'lucide-react';
 
 export default function Leaderboard() {
@@ -10,10 +10,23 @@ export default function Leaderboard() {
     loadLeaderboard();
   }, []);
 
-  const loadLeaderboard = () => {
-    const exams = getExams();
-    const predictions = getPredictions();
-    const students = getUsers().filter((u) => u.role === 'student');
+  const loadLeaderboard = async () => {
+    try {
+      const exams = await api.getAllExams();
+      const allUsers = await api.getAllUsers();
+      const students = allUsers.filter((u) => u.role === 'student');
+      
+      // Load all predictions for all students
+      const allPredictions: any[] = [];
+      for (const student of students) {
+        try {
+          const preds = await api.getPredictionsByStudent(student.id);
+          allPredictions.push(...preds);
+        } catch (error) {
+          console.error(`Error loading predictions for student ${student.id}:`, error);
+        }
+      }
+      const predictions = allPredictions;
 
     // Calculate total points for each student across all exams
     const studentTotals = students.map((student) => {
@@ -45,7 +58,10 @@ export default function Leaderboard() {
         rank: index + 1,
       }));
 
-    setLeaderboard(sorted);
+      setLeaderboard(sorted);
+    } catch (error) {
+      console.error('Error loading leaderboard:', error);
+    }
   };
 
 

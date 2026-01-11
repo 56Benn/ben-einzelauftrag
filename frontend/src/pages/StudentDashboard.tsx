@@ -3,7 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { getExams, getPredictions, savePrediction, getUsers, getSubjects, getClassMembershipsByStudent } from '@/lib/storage';
+import { api } from '@/lib/apiAdapter';
+import { getUsers, getSubjects, getClassMembershipsByStudent } from '@/lib/storage';
 import { getGradeOptions, formatGrade, calculatePoints } from '@/lib/points';
 import { getExamStatus, canSubmitTips, hasNoTips, sortExamsByStatus } from '@/lib/examUtils';
 import { Exam, Prediction } from '@/types';
@@ -44,24 +45,31 @@ export default function StudentDashboard() {
     }
   }, [selectedExam, user]);
 
-  const loadData = () => {
-    // getExams() prüft automatisch auf Abschluss und aktualisiert die Prüfungen
-    const allExams = getExams();
-    setExams(allExams);
-    const allPredictions = getPredictions();
-    setPredictions(allPredictions);
-    loadSubjects();
-    if (allExams.length > 0 && !selectedExam) {
-      const openExams = allExams.filter(e => {
-        const status = getExamStatus(e);
-        return status === 'open' || status === 'evaluation';
-      });
-      if (openExams.length > 0) {
-        const sortedOpen = sortExamsByStatus(openExams, 'open');
-        setSelectedExam(sortedOpen[0].id);
-      } else {
-        setSelectedExam(allExams[0].id);
+  const loadData = async () => {
+    try {
+      const allExams = await api.getAllExams();
+      setExams(allExams);
+      
+      if (user) {
+        const allPredictions = await api.getPredictionsByStudent(user.id);
+        setPredictions(allPredictions);
       }
+      
+      loadSubjects();
+      if (allExams.length > 0 && !selectedExam) {
+        const openExams = allExams.filter(e => {
+          const status = getExamStatus(e);
+          return status === 'open' || status === 'evaluation';
+        });
+        if (openExams.length > 0) {
+          const sortedOpen = sortExamsByStatus(openExams, 'open');
+          setSelectedExam(sortedOpen[0].id);
+        } else {
+          setSelectedExam(allExams[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
     }
   };
 
@@ -70,21 +78,25 @@ export default function StudentDashboard() {
     setSubjects(['Alle', ...allSubjects]);
   };
 
-  const loadPrediction = () => {
+  const loadPrediction = async () => {
     if (!user || !selectedExam) return;
-    const prediction = predictions.find(
-      (p) => p.examId === selectedExam && p.studentId === user.id
-    );
-    if (prediction) {
-      setPrediction1(prediction.prediction1 || '');
-      setPrediction2(prediction.prediction2 || '');
-    } else {
+    try {
+      const prediction = await api.getPredictionByExamAndStudent(selectedExam, user.id);
+      if (prediction) {
+        setPrediction1(prediction.prediction1 || '');
+        setPrediction2(prediction.prediction2 || '');
+      } else {
+        setPrediction1('');
+        setPrediction2('');
+      }
+    } catch (error) {
+      console.error('Error loading prediction:', error);
       setPrediction1('');
       setPrediction2('');
     }
   };
 
-  const handleSubmitPrediction = () => {
+  const handleSubmitPrediction = async () => {
     if (!user || !selectedExam) return;
     
     // Check if student is in a class
@@ -96,35 +108,31 @@ export default function StudentDashboard() {
     const exam = exams.find((e) => e.id === selectedExam);
     if (!exam || !canSubmitTips(exam)) return;
 
-    const existingPrediction = predictions.find(
-      (p) => p.examId === selectedExam && p.studentId === user.id
-    );
+    try {
+      const existingPrediction = await api.getPredictionByExamAndStudent(selectedExam, user.id);
 
-    const prediction: Prediction = existingPrediction || {
-      examId: selectedExam,
-      studentId: user.id,
-    };
+      const prediction: Prediction = existingPrediction || {
+        examId: selectedExam,
+        studentId: user.id,
+      };
 
-    if (prediction1 !== '' && prediction.prediction1 === undefined) {
-      prediction.prediction1 = Number(prediction1);
-      if (exam.grades && exam.grades[user.id]) {
-        prediction.points1 = calculatePoints(Number(prediction1), exam.grades[user.id]);
+      if (prediction1 !== '' && prediction.prediction1 === undefined) {
+        prediction.prediction1 = Number(prediction1);
       }
-    }
-    if (prediction2 !== '' && prediction.prediction2 === undefined) {
-      prediction.prediction2 = Number(prediction2);
-      if (exam.grades && exam.grades[user.id]) {
-        prediction.points2 = calculatePoints(Number(prediction2), exam.grades[user.id]);
+      if (prediction2 !== '' && prediction.prediction2 === undefined) {
+        prediction.prediction2 = Number(prediction2);
       }
-    }
 
-    // Use savePrediction from storage to ensure consistency
-    savePrediction(prediction);
-    
-    // Reload predictions
-    const updatedPredictions = getPredictions();
-    setPredictions(updatedPredictions);
-    loadPrediction();
+      await api.createOrUpdatePrediction(selectedExam, user.id, prediction);
+      
+      // Reload predictions
+      const updatedPredictions = await api.getPredictionsByStudent(user.id);
+      setPredictions(updatedPredictions);
+      await loadPrediction();
+    } catch (error) {
+      console.error('Error saving prediction:', error);
+      alert('Fehler beim Speichern der Vorhersage: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
+    }
   };
 
   // Filter exams
@@ -163,12 +171,38 @@ export default function StudentDashboard() {
   const currentExam = exams.find((e) => e.id === selectedExam);
   const gradeOptions = getGradeOptions();
   const { open: openExams, closed: closedExams } = getFilteredAndSortedExams();
-  const students = getUsers().filter((u) => u.role === 'student');
+  const [students, setStudents] = useState(getUsers().filter((u) => u.role === 'student'));
+  
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        const allUsers = await api.getAllUsers();
+        setStudents(allUsers.filter((u) => u.role === 'student'));
+      } catch (error) {
+        console.error('Error loading students:', error);
+      }
+    };
+    loadStudents();
+  }, []);
   
   // Calculate leaderboard for selected exam
-  const allPredictions = selectedExam
-    ? predictions.filter((p) => p.examId === selectedExam)
-    : [];
+  const [examPredictions, setExamPredictions] = useState<Prediction[]>([]);
+  
+  useEffect(() => {
+    const loadExamPredictions = async () => {
+      if (selectedExam) {
+        try {
+          const preds = await api.getPredictionsByExam(selectedExam);
+          setExamPredictions(preds);
+        } catch (error) {
+          console.error('Error loading exam predictions:', error);
+        }
+      }
+    };
+    loadExamPredictions();
+  }, [selectedExam]);
+  
+  const allPredictions = examPredictions;
   
   const examLeaderboard = students
     .map((student) => {
